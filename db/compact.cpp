@@ -338,13 +338,17 @@ namespace mongo {
                     uassert(16396, "no such shard: " + shardName, !shard.isEmpty());
 
                     if (theReplSet) {
-                        ConnectionString cs (shard["host"].String());
-                        string shardSetName = cs.getSetName();
-                        uassert(16397,
-                                str::stream() << "shard " << shardName
-                                   << " has replica set name " << shardSetName
-                                   << " that differs from this host's " << theReplSet->name(),
-                                shardSetName == theReplSet->name());
+                        string errmsg;
+                        ConnectionString cs = ConnectionString::parse(shard["host"].String(),
+                                                                      errmsg);
+                        if (cs.isValid() && cs.type() == ConnectionString::SET) {
+                            string shardSetName = cs.getSetName();
+                            uassert(16397,
+                                    str::stream() << "shard " << shardName
+                                        << " has replica set name " << shardSetName
+                                        << " that differs from this host's " << theReplSet->name(),
+                                    shardSetName == theReplSet->name());
+                        }
                     }
                     config.done();
                 }
